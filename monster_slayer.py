@@ -1,6 +1,5 @@
 import random
 
-# Constants
 MAX_HEALTH = 100
 STRONG_ATTACK_COOLDOWN = 3
 HEAL_COOLDOWN = 5
@@ -8,28 +7,58 @@ HEAL_COOLDOWN = 5
 def get_random_value(min_val, max_val):
     return random.randint(min_val, max_val)
 
-def print_health(player_health, monster_health):
-    print(f"\nPlayer Health: {player_health} | Monster Health: {monster_health}\n")
+def print_health(player_name, player_health, monster_health):
+    print(f"\n{player_name} Health: {player_health} | Monster Health: {monster_health}\n")
 
-def monster_attack():
-    return get_random_value(8, 15)
+def monster_attack(difficulty):
+    base = (8, 15)
+    if difficulty == "easy":
+        return get_random_value(base[0] - 4, base[1] - 3)  # Monster does less damage
+    elif difficulty == "hard":
+        return get_random_value(base[0] + 2, base[1] + 3)
+    return get_random_value(*base)
 
-def player_attack(strong=False):
+def player_attack(strong, difficulty):
     if strong:
-        return get_random_value(15, 25)
+        base = (15, 25)
     else:
-        return get_random_value(8, 13)
+        base = (8, 13)
 
-def player_heal():
-    return get_random_value(10, 20)
+    if difficulty == "easy":
+        return get_random_value(base[0] + 4, base[1] + 4)
+    elif difficulty == "hard":
+        return get_random_value(base[0] - 2, base[1] - 2)
+    return get_random_value(*base)
 
-def game_loop():
+def player_heal(difficulty):
+    base = (10, 20)
+    if difficulty == "easy":
+        return get_random_value(base[0] + 8, base[1] + 10)
+    elif difficulty == "hard":
+        return get_random_value(base[0] - 5, base[1] - 3)
+    return get_random_value(*base)
+
+def choose_difficulty():
+    print("\nChoose difficulty level:")
+    print("1. Easy\n2. Normal\n3. Hard")
+    while True:
+        choice = input("Enter difficulty (1-3): ")
+        if choice == "1":
+            return "easy"
+        elif choice == "2":
+            return "normal"
+        elif choice == "3":
+            return "hard"
+        else:
+            print("Invalid choice. Please select 1, 2, or 3.")
+
+def game_loop(player_name, difficulty):
     player_health = MAX_HEALTH
     monster_health = MAX_HEALTH
     turn_counter = 0
 
-    print("🔥 Welcome to Monster Slayer 🔥")
-    print_health(player_health, monster_health)
+    print(f"\n🔥 {player_name} VS Monster 🔥 (Difficulty: {difficulty.capitalize()})")
+    print_health(player_name, player_health, monster_health)
 
     while player_health > 0 and monster_health > 0:
         turn_counter += 1
@@ -45,46 +74,52 @@ def game_loop():
         choice = input("Enter your choice: ")
 
         if choice == "1":
-            dmg = player_attack()
+            dmg = player_attack(False, difficulty)
             monster_health -= dmg
-            print(f"You hit the monster for {dmg} damage.")
+            print(f"{player_name} hits the monster for {dmg} damage.")
         elif choice == "2" and turn_counter % STRONG_ATTACK_COOLDOWN == 0:
-            dmg = player_attack(strong=True)
+            dmg = player_attack(True, difficulty)
             monster_health -= dmg
-            print(f"You perform a STRONG attack for {dmg} damage!")
+            print(f"{player_name} performs a STRONG attack for {dmg} damage!")
         elif choice == "3" and turn_counter % HEAL_COOLDOWN == 0:
-            heal = player_heal()
+            heal = player_heal(difficulty)
             player_health = min(player_health + heal, MAX_HEALTH)
-            print(f"You heal yourself for {heal} HP.")
+            print(f"{player_name} heals for {heal} HP.")
         elif choice == "4":
             print("You fled the battlefield. Game over.")
-            return
+            return False
         else:
             print("Invalid or unavailable choice.")
-            turn_counter -= 1  # No valid action taken, don't count this turn
+            turn_counter -= 1
             continue
 
-        # Monster retaliates
         if monster_health > 0:
-            monster_dmg = monster_attack()
+            monster_dmg = monster_attack(difficulty)
             player_health -= monster_dmg
-            print(f"Monster attacks you for {monster_dmg} damage.")
+            print(f"Monster attacks {player_name} for {monster_dmg} damage.")
 
-        print_health(player_health, monster_health)
+        print_health(player_name, player_health, monster_health)
 
-    # Game over
     if player_health <= 0 and monster_health <= 0:
         print("It's a draw!")
     elif player_health <= 0:
-        print("You lost! The monster defeated you.")
+        print(f"{player_name} lost! The monster defeated you.")
     else:
-        print("Victory! You slayed the monster!")
+        print(f"Victory! {player_name} slayed the monster!")
 
-    # Restart?
-    again = input("Play again? (y/n): ").lower()
-    if again == "y":
-        game_loop()
+    return True
 
-# Start the game
+# Main Program
 if __name__ == "__main__":
-    game_loop()
+    player_name = input("Enter your player name: ")
+
+    while True:
+        difficulty = choose_difficulty()
+        game_finished = game_loop(player_name, difficulty)
+        if not game_finished:
+            break
+        again = input("Play again? (y/n): ").lower()
+        if again != "y":
+            break
+
+    print(f"\n👋 Goodbye, {player_name}!")
