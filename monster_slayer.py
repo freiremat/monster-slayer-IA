@@ -1,8 +1,10 @@
 import random
+import os
 
 MAX_HEALTH = 100
 STRONG_ATTACK_COOLDOWN = 3
 HEAL_COOLDOWN = 5
+HIGHSCORE_FILE = "highscores.txt"
 
 def get_random_value(min_val, max_val):
     return random.randint(min_val, max_val)
@@ -13,17 +15,13 @@ def print_health(player_name, player_health, monster_health):
 def monster_attack(difficulty):
     base = (8, 15)
     if difficulty == "easy":
-        return get_random_value(base[0] - 4, base[1] - 3)  # Monster does less damage
+        return get_random_value(base[0] - 4, base[1] - 3)
     elif difficulty == "hard":
         return get_random_value(base[0] + 2, base[1] + 3)
     return get_random_value(*base)
 
 def player_attack(strong, difficulty):
-    if strong:
-        base = (15, 25)
-    else:
-        base = (8, 13)
-
+    base = (15, 25) if strong else (8, 13)
     if difficulty == "easy":
         return get_random_value(base[0] + 4, base[1] + 4)
     elif difficulty == "hard":
@@ -51,6 +49,38 @@ def choose_difficulty():
             return "hard"
         else:
             print("Invalid choice. Please select 1, 2, or 3.")
+
+def save_highscore(username, rounds):
+    highscores = load_highscores()
+    highscores.append((username, rounds))
+    highscores.sort(key=lambda x: x[1])  # sort by rounds (ascending)
+
+    with open(HIGHSCORE_FILE, "w") as f:
+        for name, r in highscores:
+            f.write(f"{name},{r}\n")
+
+def load_highscores():
+    highscores = []
+    if not os.path.exists(HIGHSCORE_FILE):
+        return highscores
+    with open(HIGHSCORE_FILE, "r") as f:
+        for line in f:
+            if "," in line:
+                name, r = line.strip().split(",")
+                try:
+                    highscores.append((name, int(r)))
+                except ValueError:
+                    continue
+    return highscores
+
+def print_highscores():
+    print("\n📜 Highscores (Least Rounds to Win):")
+    highscores = load_highscores()
+    if not highscores:
+        print("No highscores yet!")
+    else:
+        for i, (name, rounds) in enumerate(highscores[:10], 1):  # top 10
+            print(f"{i}. {name} - {rounds} rounds")
 
 def game_loop(player_name, difficulty):
     player_health = MAX_HEALTH
@@ -105,7 +135,9 @@ def game_loop(player_name, difficulty):
     elif player_health <= 0:
         print(f"{player_name} lost! The monster defeated you.")
     else:
-        print(f"Victory! {player_name} slayed the monster!")
+        print(f"🏆 Victory! {player_name} slayed the monster in {turn_counter} rounds!")
+        save_highscore(player_name, turn_counter)
+        print_highscores()
 
     return True
 
